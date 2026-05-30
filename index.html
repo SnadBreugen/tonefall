@@ -34,7 +34,9 @@
   }
   .wrap{ display:flex;gap:34px;align-items:center; max-width:980px;width:100%;justify-content:center;position:relative;z-index:1 }
   #bloom{ position:fixed; inset:0; width:100vw; height:100vh; z-index:0; pointer-events:none;
-    opacity:.20; filter:blur(48px) grayscale(1) brightness(1.7); transform:scale(1.15); }
+    opacity:.6; filter:blur(40px) grayscale(1) sepia(1) saturate(5) hue-rotate(0deg) brightness(1.7); transform:scale(1.2);
+    animation:bloomhue 48s linear infinite; }
+  @keyframes bloomhue{ to{ filter:blur(40px) grayscale(1) sepia(1) saturate(5) hue-rotate(360deg) brightness(1.7); } }
   .side{ min-width:200px; max-width:240px; }
 
   .brand{ margin-bottom:22px; }
@@ -230,8 +232,24 @@
         <button class="chev" id="keyNext">▶</button>
       </div>
     </div>
+    <div class="mood" id="octSel">
+      <div class="k">Octave</div>
+      <div class="moodbox">
+        <button class="chev" id="octPrev">◀</button>
+        <div class="moodtxt"><div class="mn" id="octName">MID</div><div class="md" id="octDesc">middle register</div></div>
+        <button class="chev" id="octNext">▶</button>
+      </div>
+    </div>
+    <div class="mood" id="voiceSel">
+      <div class="k">Voice</div>
+      <div class="moodbox">
+        <button class="chev" id="voicePrev">◀</button>
+        <div class="moodtxt"><div class="mn" id="voiceName">SINE</div><div class="md" id="voiceDesc">pure · original</div></div>
+        <button class="chev" id="voiceNext">▶</button>
+      </div>
+    </div>
     <div class="fx">
-      <div class="k">FX · left hand</div>
+      <div class="k">FX</div>
       <div class="pad" id="pad">
         <span class="ax ax-y">reverb ↑</span>
         <span class="ax ax-x">delay →</span>
@@ -308,7 +326,7 @@
   // ---------- config ----------
   const COLS = 16, ROWS = 16;
   const COLORS = {
-    I:"#ffd070", O:"#ffbe4f", T:"#ffa838", S:"#ffc55e", Z:"#ff9d2b", J:"#ffb84a", L:"#ffac3a"
+    I:"#18e0e6", O:"#ffc23a", T:"#b65cff", S:"#36e07a", Z:"#ff4d6d", J:"#3a7bff", L:"#ff8a2a"
   };
   const SHAPES = {
     I:[[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
@@ -367,14 +385,64 @@
   let scaleIdx = 0, FREQS = [], accentRGB = [34,230,230];
   let ownMode = false;
   let ownNotes = [2,5,9]; // absolute pitch classes (C=0); default D F A
-  const OCT_SPREAD = 1; // keep voicings within ~2 octaves: focused, not a wide arpeggio
+  let OCT_SPREAD = 1; // keep voicings within ~2 octaves: focused, not a wide arpeggio
+  let pentaTest = false; // test mode: pentatonic so every row is a distinct pitch
+  const SPREAD_MODES = [
+    {sp:1, penta:false, label:"SPREAD: TIGHT · ~2 OCT · repeats"},
+    {sp:2, penta:false, label:"SPREAD: WIDE · ~3 OCT · some repeats"},
+    {sp:3, penta:true,  label:"SPREAD: PENTA · ~3 OCT · every row unique"},
+  ];
+  let spreadMode = 0;
+  let octShift = 0; // global register offset in semitones
+  const REGISTERS = [
+    {off:-24, name:"DEEP",   desc:"very low"},
+    {off:-12, name:"LOW",    desc:"low register"},
+    {off:0,   name:"MID",    desc:"middle register"},
+    {off:12,  name:"HIGH",   desc:"high register"},
+    {off:24,  name:"BRIGHT", desc:"very high"},
+  ];
+  let regIdx = 2;
+  let voiceId = "sine";
+  const VOICES = [
+    {id:"bell",  name:"BELL",   desc:"warm · default"},
+    {id:"sine",  name:"SINE",   desc:"pure · original"},
+    {id:"square",name:"SQUARE", desc:"filtered pluck"},
+    {id:"pluck", name:"PLUCK",  desc:"short · percussive"},
+    {id:"synth", name:"SYNTH",  desc:"synthwave saws"},
+  ];
+  let voiceIdx = 1;
+  function setVoice(i){
+    voiceIdx = (i + VOICES.length) % VOICES.length;
+    const v = VOICES[voiceIdx]; voiceId = v.id;
+    const nm=document.getElementById('voiceName'); if(nm) nm.textContent=v.name;
+    const ds=document.getElementById('voiceDesc'); if(ds) ds.textContent=v.desc;
+    if(AC && soundOn){ note(FREQS[7], 0.4); } // quick audition
+  }
+  function setOctave(i){
+    regIdx = Math.max(0, Math.min(REGISTERS.length-1, i));
+    const r = REGISTERS[regIdx]; octShift = r.off;
+    const nm=document.getElementById('octName'); if(nm) nm.textContent=r.name;
+    const ds=document.getElementById('octDesc'); if(ds) ds.textContent=r.desc;
+    buildScale();
+    if(AC && soundOn){ note(FREQS[7], 0.4); } // quick audition
+  }
+  function cycleSpread(){
+    spreadMode = (spreadMode+1) % SPREAD_MODES.length;
+    const m = SPREAD_MODES[spreadMode];
+    OCT_SPREAD = m.sp; pentaTest = m.penta;
+    buildScale(); jamFlash(m.label);
+  }
   function ownSorted(){ return ownNotes.length ? ownNotes.slice().sort((a,b)=>a-b) : [0]; }
   function activeIv(){ return ownMode ? ownSorted() : SCALES[scaleIdx].iv; }
   function activeBase(){ return ownMode ? 48 : rootMidi; }   // Own mode is absolute from C
-  function buildScale(){ const iv=activeIv(), base=activeBase(), n=iv.length, a=[];
-    for(let i=0;i<ROWS;i++){ const oct=Math.min(Math.floor(i/n), OCT_SPREAD);
+  function buildScale(){
+    let iv=activeIv(), base=activeBase(), hi=88, lo=40, cap=OCT_SPREAD;
+    if(pentaTest){ iv=[0,2,4,7,9]; base=Math.min(base,48); hi=96; lo=36; cap=3; } // 5-note ladder, every row distinct
+    base+=octShift; lo+=octShift; hi+=octShift;   // global register shift
+    const n=iv.length, a=[];
+    for(let i=0;i<ROWS;i++){ const oct=Math.min(Math.floor(i/n), cap);
       let midi=base+12*oct+iv[i%n]+xpose;
-      while(midi>88) midi-=12; while(midi<40) midi+=12;   // keep everything in an audible window
+      while(midi>hi) midi-=12; while(midi<lo) midi+=12;   // keep everything in the chosen window
       a.push(440*Math.pow(2,(midi-69)/12)); } FREQS=a; }
   function ownNoteNames(){ return ownSorted().map(pc=>ROOT_NAMES[pc%12]).join(' '); }
   function setRoot(i, preview){ rootIdx=((i%12)+12)%12; rootMidi=48+rootIdx; buildScale();
@@ -417,10 +485,10 @@
     comp.threshold.value=-16; comp.ratio.value=4; comp.attack.value=0.003; comp.release.value=0.25;
     master.connect(sweepLP); sweepLP.connect(hp); hp.connect(lp); lp.connect(comp); comp.connect(AC.destination);
     // lush convolution reverb, fed through a highpass so the wash stays clear
-    reverb = AC.createConvolver(); reverb.buffer = makeImpulse(2.8, 2.4);
+    reverb = AC.createConvolver(); reverb.buffer = makeImpulse(3.2, 2.3);
     reverbIn = AC.createBiquadFilter(); reverbIn.type="highpass"; reverbIn.frequency.value=240;
     reverbIn.connect(reverb);
-    rvGain = AC.createGain(); rvGain.gain.value = 0.6; reverb.connect(rvGain); rvGain.connect(master);
+    rvGain = AC.createGain(); rvGain.gain.value = 0.85; reverb.connect(rvGain); rvGain.connect(master);
     // stereo ping-pong dub delay (X axis = feedback)
     delay = AC.createGain();                 // delay send / input
     delayL = AC.createDelay(1.6); delayR = AC.createDelay(1.6);
@@ -440,7 +508,7 @@
   function applyFX(){
     if(!AC) return;
     setSmooth(fbGain.gain, fxX*0.82);   // delay feedback 0..0.82
-    setSmooth(rvGain.gain, fxY*1.1);    // reverb wet 0..1.1
+    setSmooth(rvGain.gain, fxY*1.5);    // reverb wet 0..1.5
   }
   function setDelayTime(v){ if(!AC) return; setSmooth(delayL.delayTime, v); setSmooth(delayR.delayTime, v); }
 
@@ -458,9 +526,9 @@
     f.linearRampToValueAtTime(18000, t+3.2);
   }
   function gestureWash(){ ensureAudio(); if(!AC) return;
-    const g=rvGain.gain, t=AC.currentTime, base=fxY*1.1;
+    const g=rvGain.gain, t=AC.currentTime, base=fxY*1.5;
     g.cancelScheduledValues(t); g.setValueAtTime(g.value, t);
-    g.linearRampToValueAtTime(Math.min(1.6, base+0.8), t+0.9);
+    g.linearRampToValueAtTime(Math.min(2.0, base+0.9), t+0.9);
     g.linearRampToValueAtTime(base, t+3.4);
   }
   function gesturePreset(){ ensureAudio();
@@ -496,6 +564,11 @@
   }
   // identical voice for live (AC) and offline export (OfflineAudioContext)
   function synthVoice(ac, B, freq, vel, t, thick){
+    if(voiceId==="sine")  return voiceSine(ac,B,freq,vel,t);
+    if(voiceId==="square")return voiceSquare(ac,B,freq,vel,t);
+    if(voiceId==="pluck") return voicePluck(ac,B,freq,vel,t);
+    if(voiceId==="synth") return voiceSynth(ac,B,freq,vel,t);
+    // ---- BELL (default, unchanged) ----
     const rel = thick ? 2.5 : 1.7;
     const out = ac.createGain(); out.gain.value = 1;
     out.connect(B.dry); out.connect(B.rev); out.connect(B.dly);
@@ -528,6 +601,63 @@
       const og=ac.createGain(); og.gain.setValueAtTime(0,t); og.gain.linearRampToValueAtTime(peak*0.22,t+0.03);
       og.gain.exponentialRampToValueAtTime(0.0001,t+rel*0.7); oc.connect(og); og.connect(tone); oc.start(t); oc.stop(t+rel*0.7+0.1);
     }
+  }
+  // pure sine — closest to the original tone matrix
+  function voiceSine(ac,B,freq,vel,t){
+    const out=ac.createGain(); out.gain.value=1; out.connect(B.dry); out.connect(B.rev); out.connect(B.dly);
+    const peak=0.20*vel;
+    const o=ac.createOscillator(); o.type="sine"; o.frequency.value=freq;
+    const g=ac.createGain(); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(peak,t+0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+1.1);
+    o.connect(g); g.connect(out); o.start(t); o.stop(t+1.25);
+  }
+  // filtered square pluck — hollow, woody, with a downward filter snap
+  function voiceSquare(ac,B,freq,vel,t){
+    const out=ac.createGain(); out.gain.value=1; out.connect(B.dry); out.connect(B.rev); out.connect(B.dly);
+    const lp=ac.createBiquadFilter(); lp.type="lowpass"; lp.Q.value=4;
+    lp.frequency.setValueAtTime(Math.min(7000,freq*7), t);
+    lp.frequency.exponentialRampToValueAtTime(Math.max(450,freq*1.8), t+0.35);
+    lp.connect(out);
+    const peak=0.18*vel;
+    const o=ac.createOscillator(); o.type="square"; o.frequency.value=freq;
+    const g=ac.createGain(); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(peak,t+0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+0.45);
+    o.connect(g); g.connect(lp);
+    o.start(t); o.stop(t+0.55);
+  }
+  // short percussive pluck — marimba-ish
+  function voicePluck(ac,B,freq,vel,t){
+    const out=ac.createGain(); out.gain.value=1; out.connect(B.dry); out.connect(B.rev); out.connect(B.dly);
+    const tone=ac.createBiquadFilter(); tone.type="lowpass";
+    tone.frequency.setValueAtTime(5000,t); tone.frequency.exponentialRampToValueAtTime(900,t+0.4); tone.connect(out);
+    const peak=0.22*vel;
+    const o=ac.createOscillator(); o.type="triangle"; o.frequency.value=freq;
+    const g=ac.createGain(); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(peak,t+0.003);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+0.5);
+    o.connect(g); g.connect(tone);
+    const o2=ac.createOscillator(); o2.type="sine"; o2.frequency.value=freq*2.0;
+    const g2=ac.createGain(); g2.gain.setValueAtTime(0,t); g2.gain.linearRampToValueAtTime(peak*0.3,t+0.002);
+    g2.gain.exponentialRampToValueAtTime(0.0001,t+0.18);
+    o2.connect(g2); g2.connect(out);
+    o.start(t); o.stop(t+0.6); o2.start(t); o2.stop(t+0.25);
+  }
+  // classic synthwave / Pulverisateur-style: detuned saws + resonant filter sweep
+  function voiceSynth(ac,B,freq,vel,t){
+    const out=ac.createGain(); out.gain.value=1; out.connect(B.dry); out.connect(B.rev); out.connect(B.dly);
+    const lp=ac.createBiquadFilter(); lp.type="lowpass"; lp.Q.value=7;
+    lp.frequency.setValueAtTime(Math.min(9000,freq*8), t);
+    lp.frequency.exponentialRampToValueAtTime(Math.max(520,freq*2.2), t+0.55); // downward filter sweep
+    lp.connect(out);
+    const peak=0.15*vel, rel=1.4;
+    const s1=ac.createOscillator(); s1.type="sawtooth"; s1.frequency.value=freq; s1.detune.value=-11;
+    const s2=ac.createOscillator(); s2.type="sawtooth"; s2.frequency.value=freq; s2.detune.value=11;
+    const sub=ac.createOscillator(); sub.type="square"; sub.frequency.value=freq/2;
+    const g=ac.createGain(); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(peak,t+0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+rel);
+    const subg=ac.createGain(); subg.gain.setValueAtTime(0,t); subg.gain.linearRampToValueAtTime(peak*0.4,t+0.01);
+    subg.gain.exponentialRampToValueAtTime(0.0001,t+rel);
+    s1.connect(g); s2.connect(g); g.connect(lp); sub.connect(subg); subg.connect(lp);
+    [s1,s2,sub].forEach(o=>{ o.start(t); o.stop(t+rel+0.1); });
   }
   function chord(rowsCleared){
     if(!AC||!soundOn) return;
@@ -651,13 +781,16 @@
     const pad = Math.max(2, CELL*0.10);
     const lit = opts.lit||0;
     ctx.save();
-    ctx.shadowColor = color; ctx.shadowBlur = (8 + lit*22) * (CELL/38);
     ctx.globalAlpha = opts.alpha ?? 1;
     ctx.fillStyle = color;
+    // stacked fills = stronger, punchier phosphor glow
+    ctx.shadowColor = color; ctx.shadowBlur = (20 + lit*28) * (CELL/38);
     roundRect(ctx, px+pad, py+pad, w-pad*2, h-pad*2, (CELL-pad*2)*0.22);
     ctx.fill();
-    if(lit>0){ ctx.globalAlpha=lit; ctx.fillStyle="#ffffff";
-      roundRect(ctx, px+pad+ (w-pad*2)*0.28, py+pad+(h-pad*2)*0.28, (w-pad*2)*0.44, (h-pad*2)*0.44, 4);
+    ctx.shadowBlur = (9 + lit*16) * (CELL/38);
+    ctx.fill();
+    if(lit>0){ ctx.shadowBlur=0; ctx.globalAlpha=Math.min(1,lit+0.25); ctx.fillStyle="#ffffff";
+      roundRect(ctx, px+pad+ (w-pad*2)*0.26, py+pad+(h-pad*2)*0.26, (w-pad*2)*0.48, (h-pad*2)*0.48, 4);
       ctx.fill(); }
     ctx.restore();
   }
@@ -670,7 +803,7 @@
     ctx.save();
     for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
       const [cx,cy]=cellRect(x,y);
-      ctx.fillStyle = (x+y)%2 ? "rgba(255,178,40,.020)":"rgba(255,178,40,.040)";
+      ctx.fillStyle = (x+y)%2 ? "rgba(255,178,40,.055)":"rgba(255,178,40,.095)";
       const pad=Math.max(2,CELL*0.10);
       roundRect(ctx, cx+pad, cy+pad, CELL-pad*2, CELL-pad*2, (CELL-pad*2)*0.22);
       ctx.fill();
@@ -809,6 +942,7 @@
     if(k==="d"){ ensureAudio(); delayTimeBase=Math.min(0.6, delayTimeBase+0.03); setDelayTime(delayTimeBase); return; }
     if(k==="c"){ ensureAudio(); delayTimeBase=Math.max(0.06, delayTimeBase-0.03); setDelayTime(delayTimeBase); return; }
     if(JAM[k]){ JAM[k][1](); jamFlash(JAM[k][0]); return; }
+    if(e.key==="0"){ ensureAudio(); cycleSpread(); return; }
     if(!ownMode && /^[1-8]$/.test(e.key)){ ensureAudio(); setScale(parseInt(e.key,10)-1, true); return; }
     if(!alive() || frozen) return;
     if(e.key==="ArrowLeft") move(-1);
@@ -848,7 +982,7 @@
     const oLp=octx.createBiquadFilter(); oLp.type="lowpass"; oLp.frequency.value=7200;
     const oComp=octx.createDynamicsCompressor(); oComp.threshold.value=-16; oComp.ratio.value=4; oComp.attack.value=0.003; oComp.release.value=0.25;
     oMaster.connect(oSweep); oSweep.connect(oHp); oHp.connect(oLp); oLp.connect(oComp); oComp.connect(octx.destination);
-    const oRev=octx.createConvolver(); oRev.buffer=makeImpulse(2.8,2.4,octx);
+    const oRev=octx.createConvolver(); oRev.buffer=makeImpulse(3.2,2.3,octx);
     const oRevIn=octx.createBiquadFilter(); oRevIn.type="highpass"; oRevIn.frequency.value=240; oRevIn.connect(oRev);
     const oRvG=octx.createGain(); oRvG.gain.value = rvGain?rvGain.gain.value:0.6; oRev.connect(oRvG); oRvG.connect(oMaster);
     const oDly=octx.createGain();
@@ -984,6 +1118,10 @@
   document.getElementById("moodNext").onclick=()=>{ ensureAudio(); setScale(scaleIdx+1, true); };
   document.getElementById("keyPrev").onclick=()=>{ ensureAudio(); setRoot(rootIdx-1, true); };
   document.getElementById("keyNext").onclick=()=>{ ensureAudio(); setRoot(rootIdx+1, true); };
+  document.getElementById("octPrev").onclick=()=>{ ensureAudio(); setOctave(regIdx-1); };
+  document.getElementById("octNext").onclick=()=>{ ensureAudio(); setOctave(regIdx+1); };
+  document.getElementById("voicePrev").onclick=()=>{ ensureAudio(); setVoice(voiceIdx-1); };
+  document.getElementById("voiceNext").onclick=()=>{ ensureAudio(); setVoice(voiceIdx+1); };
   document.querySelectorAll('#modeToggle .seg').forEach(b=> b.addEventListener('click',()=>{ ensureAudio(); setOwnMode(b.dataset.m==='own'); }));
   buildKeyboard();
   setRoot(2, false);     // D
