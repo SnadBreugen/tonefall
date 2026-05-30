@@ -1170,6 +1170,47 @@
   document.getElementById("voiceNext").onclick=()=>{ ensureAudio(); setVoice(voiceIdx+1); };
   document.getElementById("speedPrev").onclick=()=>{ ensureAudio(); setSpeed(speedIdx-1); };
   document.getElementById("speedNext").onclick=()=>{ ensureAudio(); setSpeed(speedIdx+1); };
+
+  // ---------- one-time hover explanations ----------
+  const TIPS = {
+    modeToggle:"<b>Presets</b> = ready-made chords. <b>Custom</b> lets you pick your own notes on a keyboard.",
+    chordSel:"<b>Chord</b> — the set of notes the grid plays. Each row is mapped to one note.",
+    keySel:"<b>Key</b> — the root note everything is tuned around.",
+    octSel:"<b>Octave</b> — shifts the whole register up or down.",
+    voiceSel:"<b>Voice</b> — the synth sound. SINE is closest to the original.",
+    speedSel:"<b>Speed</b> — how fast the playhead sweeps. CHILL is the relaxed default.",
+    pad:"<b>FX pad</b> — drag inside: left↔right = delay, up↕down = reverb.",
+    bHoldTop:"<b>Hold</b> — freeze the current loop so you can export it.",
+    exportBtn:"<b>Export</b> — renders 4 loops (with FX tails) and downloads a .wav.",
+    mute:"Toggle the <b>sound</b> on or off.",
+    pause:"<b>Pause</b> the game.",
+    board:"Blocks fall here. <b>← →</b> move · <b>↑</b> rotate · <b>space</b> drop. The playhead turns your stack into music.",
+  };
+  Object.keys(TIPS).forEach(id=>{ const el=document.getElementById(id); if(el) el.setAttribute("data-tip", TIPS[id]); });
+
+  const tip=document.getElementById("tip");
+  const shownTips=new Set();
+  let tipTimer=null;
+  function showTip(el){
+    const msg=el.getAttribute("data-tip"); if(!msg) return;
+    tip.innerHTML=msg; tip.classList.add("show");
+    const r=el.getBoundingClientRect(), tr=tip.getBoundingClientRect();
+    let x=r.left + r.width/2 - tr.width/2;
+    let y=r.bottom + 8;
+    if(y + tr.height > window.innerHeight-8) y = r.top - tr.height - 8; // flip above if no room
+    x=Math.max(8, Math.min(x, window.innerWidth - tr.width - 8));
+    tip.style.left=x+"px"; tip.style.top=Math.max(8,y)+"px";
+    clearTimeout(tipTimer); tipTimer=setTimeout(hideTip, 4500);
+  }
+  function hideTip(){ tip.classList.remove("show"); }
+  document.addEventListener("mouseover", e=>{
+    const el=e.target.closest("[data-tip]"); if(!el || shownTips.has(el)) return;
+    shownTips.add(el); showTip(el);   // only the first hover per element
+  });
+  document.addEventListener("mouseout", e=>{
+    const el=e.target.closest("[data-tip]"); if(!el) return;
+    if(!e.relatedTarget || !el.contains(e.relatedTarget)) hideTip();
+  });
   document.querySelectorAll('#modeToggle .seg').forEach(b=> b.addEventListener('click',()=>{ ensureAudio(); setOwnMode(b.dataset.m==='own'); }));
   buildKeyboard();
   setRoot(2, false);     // D
