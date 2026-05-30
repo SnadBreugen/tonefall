@@ -248,6 +248,14 @@
         <button class="chev" id="voiceNext">▶</button>
       </div>
     </div>
+    <div class="mood" id="speedSel">
+      <div class="k">Speed</div>
+      <div class="moodbox">
+        <button class="chev" id="speedPrev">◀</button>
+        <div class="moodtxt"><div class="mn" id="speedName">CHILL</div><div class="md" id="speedDesc">relaxed · default</div></div>
+        <button class="chev" id="speedNext">▶</button>
+      </div>
+    </div>
     <div class="fx">
       <div class="k">FX</div>
       <div class="pad" id="pad">
@@ -411,6 +419,21 @@
     {id:"synth", name:"SYNTH",  desc:"synthwave saws"},
   ];
   let voiceIdx = 1;
+  let stepBase = 250; // playhead step in ms (persists across games)
+  const SPEEDS = [
+    {ms:340, name:"DUB",   desc:"very slow"},
+    {ms:250, name:"CHILL", desc:"relaxed · default"},
+    {ms:190, name:"WALK",  desc:"medium"},
+    {ms:140, name:"DRIVE", desc:"brisk"},
+    {ms:110, name:"RUSH",  desc:"fast"},
+  ];
+  let speedIdx = 1;
+  function setSpeed(i){
+    speedIdx = Math.max(0, Math.min(SPEEDS.length-1, i));
+    const s = SPEEDS[speedIdx]; stepBase = s.ms; stepMs = s.ms;
+    const nm=document.getElementById('speedName'); if(nm) nm.textContent=s.name;
+    const ds=document.getElementById('speedDesc'); if(ds) ds.textContent=s.desc;
+  }
   function setVoice(i){
     voiceIdx = (i + VOICES.length) % VOICES.length;
     const v = VOICES[voiceIdx]; voiceId = v.id;
@@ -903,7 +926,7 @@
   }
   function reset(){
     grid=emptyGrid(); score=0; lines=0; level=1; gravMs=760;
-    playCol=0; markCol=0; stepMs=250; ripples=[];
+    playCol=0; markCol=0; stepMs=stepBase; ripples=[];
     frozen=false; const hb=document.getElementById('holdbadge'); if(hb) hb.classList.remove('show');
     cur=newPiece(); nextPiece=newPiece(); updHUD(); drawNext();
     lastGrav=performance.now(); lastStep=performance.now();
@@ -1123,6 +1146,8 @@
   document.getElementById("octNext").onclick=()=>{ ensureAudio(); setOctave(regIdx+1); };
   document.getElementById("voicePrev").onclick=()=>{ ensureAudio(); setVoice(voiceIdx-1); };
   document.getElementById("voiceNext").onclick=()=>{ ensureAudio(); setVoice(voiceIdx+1); };
+  document.getElementById("speedPrev").onclick=()=>{ ensureAudio(); setSpeed(speedIdx-1); };
+  document.getElementById("speedNext").onclick=()=>{ ensureAudio(); setSpeed(speedIdx+1); };
   document.querySelectorAll('#modeToggle .seg').forEach(b=> b.addEventListener('click',()=>{ ensureAudio(); setOwnMode(b.dataset.m==='own'); }));
   buildKeyboard();
   setRoot(2, false);     // D
