@@ -40,7 +40,7 @@
   .side{ min-width:180px; max-width:210px; }
   .side-right{ width:300px; max-width:300px; min-width:280px; }
   .selgrid{ display:grid; grid-template-columns:1fr 1fr; gap:10px 8px; margin-bottom:14px }
-  .selgrid .mood{ margin-bottom:0 }
+  .selgrid .mood{ margin-bottom:0; min-width:0 }
   #speedSel{ grid-column:1 / -1 }
 
   .brand{ margin-bottom:22px; }
@@ -60,7 +60,8 @@
 
   .mood{ margin-bottom:12px }
   .mood .k{ font-family:"Silkscreen",monospace;font-size:10px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:5px }
-  .moodbox{ display:flex;align-items:center;gap:6px;background:var(--panel);border:2px solid var(--ink);padding:6px;height:54px;box-sizing:border-box }
+  .moodbox{ display:flex;align-items:center;gap:6px;background:var(--panel);border:2px solid var(--ink);padding:6px;height:54px;box-sizing:border-box;overflow:hidden }
+  .chev{ flex:0 0 auto }
   .moodtxt{ flex:1;text-align:center;min-width:0 }
   .moodtxt .mn{ font-family:"Silkscreen",monospace;font-size:13px;color:var(--ink);letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis }
   .moodtxt .md{ font-size:11px;color:var(--amber);letter-spacing:1px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis }
@@ -177,6 +178,12 @@
     font-family:"Silkscreen",monospace;font-size:10px;letter-spacing:1px;color:var(--amber) }
   .footer i{ display:inline-block;width:7px;height:7px;background:var(--amber);margin-right:7px;vertical-align:middle }
   .footer .r{ color:var(--dim) }
+  #tip{ position:fixed; z-index:60; max-width:230px; background:var(--panel); color:var(--ink);
+    border:2px solid var(--amber); padding:8px 10px; font-family:"Space Mono",ui-monospace,monospace;
+    font-size:11px; line-height:1.55; letter-spacing:.3px; pointer-events:none; opacity:0;
+    transform:translateY(4px); transition:opacity .12s, transform .12s; box-shadow:4px 4px 0 rgba(0,0,0,.55); }
+  #tip.show{ opacity:1; transform:translateY(0) }
+  #tip b{ color:var(--amber); font-weight:700 }
 
   @media (max-width:760px){
     .wrap{ flex-direction:column;gap:14px }
@@ -340,6 +347,7 @@
   <span><i></i>SNAD INDUSTRIES</span>
   <span class="r">tonefall · v1.0</span>
 </div>
+<div id="tip" role="status" aria-live="polite"></div>
 
 <script>
 (() => {
