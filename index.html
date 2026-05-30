@@ -670,7 +670,7 @@
 
   // ---------- state ----------
   let grid, cur, nextPiece, score, lines, level, gravMs, lastGrav, dropping=false;
-  let playCol, stepMs, lastStep, ripples=[];
+  let playCol, markCol=0, stepMs, lastStep, ripples=[];
   let running=false, paused=false, raf=null, lastT=0;
   let fxX=0.33, fxY=0.55; // X = delay feedback, Y = reverb wet (normalized 0..1)
 
@@ -767,6 +767,7 @@
         ripples.push({x:playCol, y, r:0, a:1});
       }
     }
+    markCol = playCol;                 // marker sits on the column that is sounding right now
     playCol = (playCol+1)%COLS;
   }
 
@@ -812,7 +813,7 @@
 
     // scanline column glow (monochrome amber phosphor)
     if(running){
-      const gx = playCol*CELL, r=255, g=178, b=40;
+      const gx = markCol*CELL, r=255, g=178, b=40;
       const grad = ctx.createLinearGradient(gx,0,gx+CELL,0);
       grad.addColorStop(0,`rgba(${r},${g},${b},0)`);
       grad.addColorStop(.5,`rgba(${r},${g},${b},.20)`);
@@ -902,7 +903,7 @@
   }
   function reset(){
     grid=emptyGrid(); score=0; lines=0; level=1; gravMs=760;
-    playCol=0; stepMs=250; ripples=[];
+    playCol=0; markCol=0; stepMs=250; ripples=[];
     frozen=false; const hb=document.getElementById('holdbadge'); if(hb) hb.classList.remove('show');
     cur=newPiece(); nextPiece=newPiece(); updHUD(); drawNext();
     lastGrav=performance.now(); lastStep=performance.now();
