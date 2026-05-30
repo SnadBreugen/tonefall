@@ -32,7 +32,7 @@
     overflow-y:auto;
     user-select:none;
   }
-  .wrap{ display:flex;gap:26px;align-items:center;flex-wrap:wrap; max-width:1080px;width:100%;justify-content:center;position:relative;z-index:1; margin:auto }
+  .wrap{ display:flex;gap:24px;align-items:center;flex-wrap:nowrap; width:100%;justify-content:center;position:relative;z-index:1; margin:auto }
   #bloom{ position:fixed; inset:0; width:100vw; height:100vh; z-index:0; pointer-events:none;
     opacity:.6; filter:blur(40px) grayscale(1) sepia(1) saturate(5) hue-rotate(0deg) brightness(1.7); transform:scale(1.2);
     animation:bloomhue 48s linear infinite; }
@@ -370,8 +370,10 @@
   let CELL = 38, DPR = 1;
 
   function fit(){
-    const maxByH = Math.min(window.innerHeight - 120, 660);
-    const maxByW = Math.min(window.innerWidth - 40, 660);
+    const wide = window.innerWidth > 820;
+    const sideReserve = wide ? 580 : 40;      // leave room for the two control columns
+    const maxByH = Math.min(window.innerHeight - 130, 620);
+    const maxByW = Math.min(window.innerWidth - sideReserve, 620);
     const size = Math.max(220, Math.min(maxByH, maxByW));
     CELL = Math.floor(size / COLS);
     DPR = Math.min(window.devicePixelRatio || 1, 2);
