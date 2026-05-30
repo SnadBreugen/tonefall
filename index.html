@@ -27,17 +27,21 @@
       linear-gradient(90deg, rgba(242,239,230,.035) 1px, transparent 1px);
     background-size:34px 34px,34px 34px;
     min-height:100%;
-    display:flex;align-items:center;justify-content:center;
+    display:flex;
     padding:18px 18px 44px;
-    overflow:hidden;
+    overflow-y:auto;
     user-select:none;
   }
-  .wrap{ display:flex;gap:34px;align-items:center; max-width:980px;width:100%;justify-content:center;position:relative;z-index:1 }
+  .wrap{ display:flex;gap:26px;align-items:center;flex-wrap:wrap; max-width:1080px;width:100%;justify-content:center;position:relative;z-index:1; margin:auto }
   #bloom{ position:fixed; inset:0; width:100vw; height:100vh; z-index:0; pointer-events:none;
     opacity:.6; filter:blur(40px) grayscale(1) sepia(1) saturate(5) hue-rotate(0deg) brightness(1.7); transform:scale(1.2);
     animation:bloomhue 48s linear infinite; }
   @keyframes bloomhue{ to{ filter:blur(40px) grayscale(1) sepia(1) saturate(5) hue-rotate(360deg) brightness(1.7); } }
-  .side{ min-width:200px; max-width:240px; }
+  .side{ min-width:180px; max-width:210px; }
+  .side-right{ width:300px; max-width:300px; min-width:280px; }
+  .selgrid{ display:grid; grid-template-columns:1fr 1fr; gap:10px 8px; margin-bottom:14px }
+  .selgrid .mood{ margin-bottom:0 }
+  #speedSel{ grid-column:1 / -1 }
 
   .brand{ margin-bottom:22px; }
   .brandchip{ display:inline-flex;flex-direction:column;gap:8px;background:transparent;padding:0 0 10px;border-bottom:4px solid var(--amber) }
@@ -54,13 +58,14 @@
   .next-wrap .k{ font-family:"Silkscreen",monospace;font-size:10px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:8px }
   #next{ display:block;background:var(--screen);border:2px solid var(--ink) }
 
-  .mood{ margin-bottom:14px }
-  .mood .k{ font-family:"Silkscreen",monospace;font-size:10px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:7px }
-  .moodbox{ display:flex;align-items:center;gap:8px;background:var(--panel);border:2px solid var(--ink);padding:8px;height:62px;box-sizing:border-box }
+  .mood{ margin-bottom:12px }
+  .mood .k{ font-family:"Silkscreen",monospace;font-size:10px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:5px }
+  .moodbox{ display:flex;align-items:center;gap:6px;background:var(--panel);border:2px solid var(--ink);padding:6px;height:54px;box-sizing:border-box }
   .moodtxt{ flex:1;text-align:center;min-width:0 }
   .moodtxt .mn{ font-family:"Silkscreen",monospace;font-size:13px;color:var(--ink);letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis }
   .moodtxt .md{ font-size:11px;color:var(--amber);letter-spacing:1px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis }
   .chev{ background:var(--panel2);border:2px solid var(--ink);color:var(--ink);width:32px;height:38px;cursor:pointer;font-size:14px;flex:0 0 auto;transition:background .1s,color .1s }
+  .selgrid .chev{ width:26px }
   .chev:hover{ background:var(--ink);color:var(--bg) }
   .chev:active{ background:var(--amber);color:#000;border-color:var(--amber) }
   .fx{ margin-bottom:16px }
@@ -176,6 +181,8 @@
   @media (max-width:760px){
     .wrap{ flex-direction:column;gap:14px }
     .side{ width:100%;max-width:none;display:flex;flex-wrap:wrap;gap:14px 22px;align-items:flex-end;justify-content:center }
+    .side-right{ width:100%;max-width:420px;min-width:0;display:block }
+    .selgrid{ max-width:420px;margin-left:auto;margin-right:auto }
     .brand{ width:100%;text-align:center;margin-bottom:0 }
     .brand .logoRow{ justify-content:center }
     .next-wrap,.hint{ display:none }
@@ -209,62 +216,6 @@
     <div class="stat"><div class="k">Lines</div><div class="v" id="lines">0</div></div>
     <div class="stat"><div class="k">Level</div><div class="v" id="level">1</div></div>
     <div class="next-wrap"><div class="k">Next</div><canvas id="next" width="120" height="120"></canvas></div>
-    <div class="modeToggle" id="modeToggle">
-      <button class="seg active" data-m="presets">Presets</button>
-      <button class="seg" data-m="own">Custom</button>
-    </div>
-    <div class="mood" id="chordSel">
-      <div class="k">Chord</div>
-      <div class="moodbox">
-        <button class="chev" id="moodPrev">◀</button>
-        <div class="moodtxt">
-          <div class="mn" id="moodName">Minor</div>
-          <div class="md" id="moodDesc">dark · dub</div>
-        </div>
-        <button class="chev" id="moodNext">▶</button>
-      </div>
-    </div>
-    <div class="mood" id="keySel">
-      <div class="k">Key</div>
-      <div class="moodbox">
-        <button class="chev" id="keyPrev">◀</button>
-        <div class="moodtxt"><div class="mn" id="keyName">D</div><div class="md">root</div></div>
-        <button class="chev" id="keyNext">▶</button>
-      </div>
-    </div>
-    <div class="mood" id="octSel">
-      <div class="k">Octave</div>
-      <div class="moodbox">
-        <button class="chev" id="octPrev">◀</button>
-        <div class="moodtxt"><div class="mn" id="octName">MID</div><div class="md" id="octDesc">middle register</div></div>
-        <button class="chev" id="octNext">▶</button>
-      </div>
-    </div>
-    <div class="mood" id="voiceSel">
-      <div class="k">Voice</div>
-      <div class="moodbox">
-        <button class="chev" id="voicePrev">◀</button>
-        <div class="moodtxt"><div class="mn" id="voiceName">SINE</div><div class="md" id="voiceDesc">pure · original</div></div>
-        <button class="chev" id="voiceNext">▶</button>
-      </div>
-    </div>
-    <div class="mood" id="speedSel">
-      <div class="k">Speed</div>
-      <div class="moodbox">
-        <button class="chev" id="speedPrev">◀</button>
-        <div class="moodtxt"><div class="mn" id="speedName">CHILL</div><div class="md" id="speedDesc">relaxed · default</div></div>
-        <button class="chev" id="speedNext">▶</button>
-      </div>
-    </div>
-    <div class="fx">
-      <div class="k">FX</div>
-      <div class="pad" id="pad">
-        <span class="ax ax-y">reverb ↑</span>
-        <span class="ax ax-x">delay →</span>
-        <div class="dot" id="dot"></div>
-      </div>
-      <div class="fxhint">drag · or <b>A/Z</b> reverb · <b>S/X</b> delay · <b>D/C</b> delay time</div>
-    </div>
     <div class="hint">
       <b>← →</b> move<br>
       <b>↑</b> rotate<br>
@@ -311,6 +262,67 @@
     <div id="kbwrap" style="display:none">
       <div class="kb" id="kb"></div>
       <div class="kblabel" id="kblabel">custom chord</div>
+    </div>
+  </div>
+
+  <div class="side side-right">
+    <div class="modeToggle" id="modeToggle">
+      <button class="seg active" data-m="presets">Presets</button>
+      <button class="seg" data-m="own">Custom</button>
+    </div>
+    <div class="selgrid">
+    <div class="mood" id="chordSel">
+      <div class="k">Chord</div>
+      <div class="moodbox">
+        <button class="chev" id="moodPrev">◀</button>
+        <div class="moodtxt">
+          <div class="mn" id="moodName">Minor</div>
+          <div class="md" id="moodDesc">dark · dub</div>
+        </div>
+        <button class="chev" id="moodNext">▶</button>
+      </div>
+    </div>
+    <div class="mood" id="keySel">
+      <div class="k">Key</div>
+      <div class="moodbox">
+        <button class="chev" id="keyPrev">◀</button>
+        <div class="moodtxt"><div class="mn" id="keyName">D</div><div class="md">root</div></div>
+        <button class="chev" id="keyNext">▶</button>
+      </div>
+    </div>
+    <div class="mood" id="octSel">
+      <div class="k">Octave</div>
+      <div class="moodbox">
+        <button class="chev" id="octPrev">◀</button>
+        <div class="moodtxt"><div class="mn" id="octName">MID</div><div class="md" id="octDesc">middle register</div></div>
+        <button class="chev" id="octNext">▶</button>
+      </div>
+    </div>
+    <div class="mood" id="voiceSel">
+      <div class="k">Voice</div>
+      <div class="moodbox">
+        <button class="chev" id="voicePrev">◀</button>
+        <div class="moodtxt"><div class="mn" id="voiceName">SINE</div><div class="md" id="voiceDesc">pure · original</div></div>
+        <button class="chev" id="voiceNext">▶</button>
+      </div>
+    </div>
+    <div class="mood" id="speedSel">
+      <div class="k">Speed</div>
+      <div class="moodbox">
+        <button class="chev" id="speedPrev">◀</button>
+        <div class="moodtxt"><div class="mn" id="speedName">CHILL</div><div class="md" id="speedDesc">relaxed · default</div></div>
+        <button class="chev" id="speedNext">▶</button>
+      </div>
+    </div>
+    </div>
+    <div class="fx">
+      <div class="k">FX</div>
+      <div class="pad" id="pad">
+        <span class="ax ax-y">reverb ↑</span>
+        <span class="ax ax-x">delay →</span>
+        <div class="dot" id="dot"></div>
+      </div>
+      <div class="fxhint">drag · or <b>A/Z</b> reverb · <b>S/X</b> delay · <b>D/C</b> delay time</div>
     </div>
   </div>
 </div>
