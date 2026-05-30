@@ -34,14 +34,14 @@
   }
   .wrap{ display:flex;gap:24px;align-items:center;flex-wrap:nowrap; width:100%;justify-content:center;position:relative;z-index:1; margin:auto }
   #bloom{ position:fixed; inset:0; width:100vw; height:100vh; z-index:0; pointer-events:none;
-    opacity:.6; filter:blur(40px) grayscale(1) sepia(1) saturate(5) hue-rotate(0deg) brightness(1.7); transform:scale(1.2);
+    opacity:.7; filter:blur(40px) grayscale(1) sepia(1) saturate(5) hue-rotate(0deg) brightness(1.7); transform:scale(1.2);
     animation:bloomhue 48s linear infinite; }
   @keyframes bloomhue{ to{ filter:blur(40px) grayscale(1) sepia(1) saturate(5) hue-rotate(360deg) brightness(1.7); } }
   .side{ min-width:180px; max-width:210px; }
   .side-right{ width:300px; max-width:300px; min-width:280px; }
   .selgrid{ display:grid; grid-template-columns:1fr 1fr; gap:10px 8px; margin-bottom:14px }
   .selgrid .mood{ margin-bottom:0; min-width:0 }
-  #speedSel{ grid-column:1 / -1 }
+  #voiceSel{ grid-column:1 / -1 }
 
   .brand{ margin-bottom:22px; }
   .brandchip{ display:inline-flex;flex-direction:column;gap:8px;background:transparent;padding:0 0 10px;border-bottom:4px solid var(--amber) }
@@ -305,20 +305,20 @@
         <button class="chev" id="octNext">▶</button>
       </div>
     </div>
-    <div class="mood" id="voiceSel">
-      <div class="k">Voice</div>
-      <div class="moodbox">
-        <button class="chev" id="voicePrev">◀</button>
-        <div class="moodtxt"><div class="mn" id="voiceName">SINE</div><div class="md" id="voiceDesc">pure · original</div></div>
-        <button class="chev" id="voiceNext">▶</button>
-      </div>
-    </div>
     <div class="mood" id="speedSel">
       <div class="k">Speed</div>
       <div class="moodbox">
         <button class="chev" id="speedPrev">◀</button>
         <div class="moodtxt"><div class="mn" id="speedName">CHILL</div><div class="md" id="speedDesc">relaxed · default</div></div>
         <button class="chev" id="speedNext">▶</button>
+      </div>
+    </div>
+    <div class="mood" id="voiceSel">
+      <div class="k">Voice</div>
+      <div class="moodbox">
+        <button class="chev" id="voicePrev">◀</button>
+        <div class="moodtxt"><div class="mn" id="voiceName">SINE</div><div class="md" id="voiceDesc">pure · original</div></div>
+        <button class="chev" id="voiceNext">▶</button>
       </div>
     </div>
     </div>
